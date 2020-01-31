@@ -11,7 +11,7 @@
 //#include "audio_example_file.h"
 #include "esp_adc_cal.h"
 
-static const char* TAG = "ad/da";
+//static const char* TAG = "ad/da";
 #define V_REF   1100
 #define ADC1_TEST_CHANNEL (ADC1_CHANNEL_7)
 
@@ -28,17 +28,18 @@ static const char* TAG = "ad/da";
 //i2s number
 #define EXAMPLE_I2S_NUM           (0)
 //i2s sample rate
-#define EXAMPLE_I2S_SAMPLE_RATE   (16000)
+#define EXAMPLE_I2S_SAMPLE_RATE   (48000)  //(16000)
 //i2s data bits
-#define EXAMPLE_I2S_SAMPLE_BITS   (16)
+#define EXAMPLE_I2S_SAMPLE_BITS   (I2S_BITS_PER_SAMPLE_32BIT)  // 16
 //enable display buffer for debug
 #define EXAMPLE_I2S_BUF_DEBUG     (0)
 //I2S read buffer length
-#define EXAMPLE_I2S_READ_LEN      (16 * 1024)
+#define EXAMPLE_I2S_READ_LEN      (32*1024)  //(16 * 1024)
 //I2S data format
 #define EXAMPLE_I2S_FORMAT        (I2S_CHANNEL_FMT_RIGHT_LEFT)
 //I2S channel number
-#define EXAMPLE_I2S_CHANNEL_NUM   ((EXAMPLE_I2S_FORMAT < I2S_CHANNEL_FMT_ONLY_RIGHT) ? (2) : (1))
+//#define EXAMPLE_I2S_CHANNEL_NUM   ((EXAMPLE_I2S_FORMAT < I2S_CHANNEL_FMT_ONLY_RIGHT) ? (2) : (1))
+#define EXAMPLE_I2S_CHANNEL_NUM   (I2S_COMM_FORMAT_PCM_LONG)
 //I2S built-in ADC unit
 #define I2S_ADC_UNIT              ADC_UNIT_1
 //I2S built-in ADC channel
@@ -60,6 +61,7 @@ static xQueueHandle event_queue;
  */
 void example_i2s_init()
 {
+#if 0
 	 int i2s_num = EXAMPLE_I2S_NUM;
 	 i2s_config_t i2s_config = {
         .mode = I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_TX | I2S_MODE_DAC_BUILT_IN | I2S_MODE_ADC_BUILT_IN,
@@ -71,15 +73,36 @@ void example_i2s_init()
 	    .dma_buf_count = 2,
 	    .dma_buf_len = 1024
 	 };
-	 //install and start i2s driver
-	 i2s_driver_install( i2s_num, &i2s_config, 10, &event_queue );
-	 //init DAC pad
-	 i2s_set_dac_mode(I2S_DAC_CHANNEL_BOTH_EN);
 	 //init ADC pad
 	 i2s_set_adc_mode(I2S_ADC_UNIT, I2S_ADC_CHANNEL);
-
-
         i2s_adc_enable( EXAMPLE_I2S_NUM );
+#else
+	 int i2s_num = EXAMPLE_I2S_NUM;
+	 i2s_config_t i2s_config = {
+        .mode = I2S_MODE_SLAVE | I2S_MODE_RX,
+        .sample_rate =  EXAMPLE_I2S_SAMPLE_RATE,
+        .bits_per_sample = EXAMPLE_I2S_SAMPLE_BITS,
+	    .communication_format = I2S_COMM_FORMAT_I2S,
+	    .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
+	    .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+	    .dma_buf_count = 2,
+	    .dma_buf_len = 1024
+	 };
+
+        const i2s_pin_config_t pin_config = {
+            .bck_io_num = 26,
+            .ws_io_num = 25,
+            .data_out_num = I2S_PIN_NO_CHANGE,
+            .data_in_num = 22
+       };
+#endif
+	 //install and start i2s driver
+	 i2s_driver_install( i2s_num, &i2s_config, 10, &event_queue );
+
+        i2s_set_pin( i2s_num, &pin_config );
+
+	 //init DAC pad
+//	 i2s_set_dac_mode(I2S_DAC_CHANNEL_BOTH_EN);
 }
 
 
